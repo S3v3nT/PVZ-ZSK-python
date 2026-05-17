@@ -16,6 +16,8 @@ class uczenZSK:
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         
+        self.hp = 100
+        
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
     def draw(self): 
         window.blit(self.image,(self.x_cord, self.y_cord))
@@ -31,6 +33,12 @@ class uczenZSK:
             self.x_cord +=speed
         
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+    
+    def getXBoundaries(self):
+        return self.x_cord <= 1400 and self.x_cord >= 0
+    
+    def getYBoundaries(self):
+        return self.y_cord <= 600 and self.y_cord >= 0
 
 class peashooter:
     def __init__(self):
@@ -54,7 +62,6 @@ class peaBall:
         
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
         
     def draw(self):
@@ -90,7 +97,11 @@ def main():
         
         keys = pygame.key.get_pressed()
         
-        player.move(keys)
+        if player.getXBoundaries() and player.getYBoundaries():
+            player.move(keys)
+        else:
+            player.x_cord = 0
+            player.y_cord = 0
         
         if shoot_cooldown > 0:
             shoot_cooldown -= 1
