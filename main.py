@@ -32,16 +32,18 @@ class uczenZSK:
         if keys[pygame.K_d]:
             self.x_cord +=speed
         
-        self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
-    
-    def getXBoundaries(self):
-        return self.x_cord <= 1400 and self.x_cord >= 0
-    
-    def getYBoundaries(self):
-        return self.y_cord <= 600 and self.y_cord >= 0
-
+        self.x_cord = max(0, min(self.x_cord, 1400 - self.width))
+        self.y_cord = max(0, min(self.y_cord, 600 - self.height))
+        
+        self.hitbox = pygame.Rect(self.x_cord + 10, self.y_cord + 10, self.width - 20, self.height - 20)
+        
     def getHP(self):
         return self.hp
+    
+    def take_damage(self, amount):
+        self.hp -= amount
+        if self.hp < 0:
+            self.hp = 0
 
 class peashooter:
     def __init__(self):
@@ -65,16 +67,34 @@ class peaBall:
         
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+        
+        self.hitbox = pygame.Rect(self.x_cord + 5, self.y_cord + 5, self.width - 12, self.height - 12)
         
     def draw(self):
         window.blit(self.image, (self.x_cord, self.y_cord))
     
     def move(self):
-        self.x_cord += 8
+        self.x_cord += 2
+        self.hitbox = pygame.Rect(self.x_cord + 5, self.y_cord + 5, self.width - 12, self.height - 12)
+    
     
     def isOffscreen(self):
         return self.x_cord > 1450
+    
+    def update(self, player):
+        """Zwraca True jeśli pocisk miał kolizję"""
+        steps = 5
+        step_size = 8.0 / steps   # prędkość bazowa = 8
+
+        for _ in range(steps):
+            self.x_cord += step_size
+            self.hitbox.x = self.x_cord + 4
+            self.hitbox.y = self.y_cord + 4
+
+            if player.hitbox.colliderect(self.hitbox):
+                player.take_damage(25)
+                return True
+        return False
 
 
 def main():
@@ -83,12 +103,16 @@ def main():
     defender = peashooter()
     peaballs = []
     
+    font = pygame.font.SysFont(None, 36)
+    
     clock = pygame.time.Clock()
     
     background = pygame.image.load(os.path.join(scriptDir, 'assets', 'ogrod.jpg'))
     
     shoot_cooldown = 0
     shoot_rate = 45
+    
+    font = pygame.font.SysFont(None, 36)
     
     while run:
         clock.tick(60) 
@@ -100,11 +124,7 @@ def main():
         
         keys = pygame.key.get_pressed()
         
-        if player.getXBoundaries() and player.getYBoundaries():
-            player.move(keys)
-        else:
-            player.x_cord = 0
-            player.y_cord = 0
+        player.move(keys)
         
         if shoot_cooldown > 0:
             shoot_cooldown -= 1
@@ -118,19 +138,25 @@ def main():
             peaballs.append(peaBall(defender))
         
         for peaball in peaballs[:]:
+            hit = peaball.update(player)   # move + check collision
+
+            if hit or peaball.x_cord > 1450:
+                peaballs.remove(peaball)
+        
+        for peaball in peaballs[:]:
             peaball.move()
             if peaball.isOffscreen():
                 peaballs.remove(peaball)
-        
-        for peaball in peaballs:
-            if player.hitbox.colliderect(peaball.hitbox):
-                peaballs.remove(peaball)
-                player.hp -= 50
         
         window.blit(background,(0,0))
         
         for peaball in peaballs:
             peaball.draw()
+        pygame.draw.rect(window, (255, 0, 0), player.hitbox, 2)
+        for peaball in peaballs:
+            pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
+        hp_text = font.render(f"HP: {player.hp}", True, (255, 255, 255))
+        window.blit(hp_text, (20, 20))
         defender.draw()
         if player.hp > 0:
             player.draw()
