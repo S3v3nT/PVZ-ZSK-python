@@ -40,6 +40,9 @@ class uczenZSK:
     def getYBoundaries(self):
         return self.y_cord <= 600 and self.y_cord >= 0
 
+    def getHP(self):
+        return self.hp
+
 class peashooter:
     def __init__(self):
         self.x_cord = 200
@@ -119,11 +122,18 @@ def main():
             if peaball.isOffscreen():
                 peaballs.remove(peaball)
         
+        for peaball in peaballs:
+            if player.hitbox.colliderect(peaball.hitbox):
+                peaballs.remove(peaball)
+                player.hp -= 50
+        
         window.blit(background,(0,0))
+        
         for peaball in peaballs:
             peaball.draw()
         defender.draw()
-        player.draw()
+        if player.hp > 0:
+            player.draw()
         pygame.display.update()
 
 if __name__== "__main__":
