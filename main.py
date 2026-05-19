@@ -164,23 +164,29 @@ def main():
         
         window.blit(background,(0,0))
         
-        for peaball in peaballs:
-            peaball.draw()
+        if playerAlive:
+            for peaball in peaballs:
+                peaball.draw()
+            
+            pygame.draw.rect(window, (255, 0, 0), player.hitbox, 2)
+            for peaball in peaballs:
+                pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
+            
+            hp_text = font.render(f"HP: {player.hp}", True, (255, 255, 255))
+            window.blit(hp_text, (20, 20))
+            
+            score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+            window.blit(score_text, (20, 60))
+            
+            defender.draw()
+            
+            if player.hp > 0:
+                player.draw()
         
-        pygame.draw.rect(window, (255, 0, 0), player.hitbox, 2)
-        for peaball in peaballs:
-            pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
-        
-        hp_text = font.render(f"HP: {player.hp}", True, (255, 255, 255))
-        window.blit(hp_text, (20, 20))
-        
-        score_text = font.render(f"Score: {score}", True, (0, 0, 0))
-        window.blit(score_text, (20, 60))
-        
-        defender.draw()
-        
-        if player.hp > 0:
-            player.draw()
+        if playerAlive == False:
+            gameOverText = bigFont.render(f"Game over :(", True, (0, 0, 0))
+            window.blit(gameOverText, (500, 200))
+            window.blit(score_text, (600, 300))
         pygame.display.update()
 
 if __name__== "__main__":
