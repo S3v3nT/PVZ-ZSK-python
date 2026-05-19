@@ -82,9 +82,8 @@ class peaBall:
         return self.x_cord > 1450
     
     def update(self, player):
-        """Zwraca True jeśli pocisk miał kolizję"""
         steps = 5
-        step_size = 8.0 / steps   # prędkość bazowa = 8
+        step_size = 8.0 / steps
 
         for _ in range(steps):
             self.x_cord += step_size
@@ -99,11 +98,14 @@ class peaBall:
 
 def main():
     run = True
+    playerAlive = True
     player = uczenZSK()
     defender = peashooter()
     peaballs = []
+    score = 0
     
     font = pygame.font.SysFont(None, 36)
+    bigFont = pygame.font.SysFont(None, 70)
     
     clock = pygame.time.Clock()
     
@@ -112,7 +114,8 @@ def main():
     shoot_cooldown = 0
     shoot_rate = 45
     
-    font = pygame.font.SysFont(None, 36)
+    scoreCooldown = 0
+    scoreRate = 30
     
     while run:
         clock.tick(60) 
@@ -121,6 +124,9 @@ def main():
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 run = False
+        
+        if player.hp <= 0:
+            playerAlive = False
         
         keys = pygame.key.get_pressed()
         
@@ -138,7 +144,7 @@ def main():
             peaballs.append(peaBall(defender))
         
         for peaball in peaballs[:]:
-            hit = peaball.update(player)   # move + check collision
+            hit = peaball.update(player)
 
             if hit or peaball.x_cord > 1450:
                 peaballs.remove(peaball)
@@ -148,16 +154,31 @@ def main():
             if peaball.isOffscreen():
                 peaballs.remove(peaball)
         
+        if scoreCooldown > 0:
+            scoreCooldown -= 1
+        
+        if scoreCooldown == 0:
+            if player.hp > 0:
+                score += 1
+                scoreCooldown = scoreRate
+        
         window.blit(background,(0,0))
         
         for peaball in peaballs:
             peaball.draw()
+        
         pygame.draw.rect(window, (255, 0, 0), player.hitbox, 2)
         for peaball in peaballs:
             pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
+        
         hp_text = font.render(f"HP: {player.hp}", True, (255, 255, 255))
         window.blit(hp_text, (20, 20))
+        
+        score_text = font.render(f"Score: {score}", True, (0, 0, 0))
+        window.blit(score_text, (20, 60))
+        
         defender.draw()
+        
         if player.hp > 0:
             player.draw()
         pygame.display.update()
