@@ -9,10 +9,11 @@ scriptDir = os.path.dirname(os.path.abspath(__file__))
 
 class peashooter:
     def __init__(self, x_cord=200, y_cord=60):
+        self.shoot_cooldown = 0
         self.x_cord = x_cord
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooterZsk.png'))
-        self.image = pygame.transform.scale(self.image, (100, 100))  # width, height
+        self.image = pygame.transform.scale(self.image, (80, 80))  # width, height
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         
@@ -36,7 +37,7 @@ class peaBall:
         window.blit(self.image, (self.x_cord, self.y_cord))
     
     def move(self):
-        self.x_cord += 2
+        self.x_cord += 3
         self.hitbox = pygame.Rect(self.x_cord + 5, self.y_cord + 5, self.width - 12, self.height - 12)
     
     
@@ -55,7 +56,7 @@ class zombie:
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'zombie.png'))
         self.image = pygame.transform.scale(self.image, (75, 125))  # width, height
-        self.hp = 100
+        self.hp = 200
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         
@@ -65,12 +66,39 @@ class zombie:
     def move(self):
         self.x_cord -= 0.5
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
-
+def get_wave_count(elapsed_time):
+    """Return how many zombies to spawn based on game time"""
+    if elapsed_time < 60:
+        return 1  # Wave 1: 1 zombie (0-60 seconds)
+    elif elapsed_time < 120:
+        return 2  # Wave 2: 2 zombies (60-120 seconds)
+    elif elapsed_time < 180:
+        return 3  # Wave 3: 3 zombies (120-180 seconds)
+    else:
+        return randint(4, 7)  # Wave 4+: random 4-7 zombies (180+ seconds)
 def main():
     placing_peashooter = False
-    lanes = [50, 150, 250, 350, 450]
+    elapsed_time = 0  # Track seconds elapsed
+    # 9x5 tile grid system
+    tile_cols = 9
+    tile_rows = 5
+    tile_width = 80
+    tile_height = 100
+    grid_start_x = 250
+    grid_start_y = 50
+    
+    # Generate all tile positions
+    tile_positions = {}  # (col, row) -> (x, y)
+    for col in range(tile_cols):
+        for row in range(tile_rows):
+            x = grid_start_x + col * tile_width
+            y = grid_start_y + row * tile_height
+            tile_positions[(col, row)] = (x, y)
+    
+    occupied_tiles = {}  # (col, row) -> peashooter object
+    
     run = True
-    peashooters = []  # Start with one peashooter
+    game_over = False
     peaballs = []
     zombies = []
     score = 0
@@ -83,8 +111,6 @@ def main():
     clock = pygame.time.Clock()
     
     background = pygame.image.load(os.path.join(scriptDir, 'assets', 'ogrod.jpg'))
-    
-    shoot_cooldown = 0
     shoot_rate = 45
     
     scoreCooldown = 0
@@ -95,87 +121,114 @@ def main():
     
     while run:
         clock.tick(60) 
-        
+        elapsed_time += 1/60 
         pygame.time.Clock().tick(60)
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 run = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if game_over:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        # Restart the game
+                        return main()
+                    elif event.key == pygame.K_q:
+                        run = False
+            if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
                if card_rect.collidepoint(event.pos):
                    placing_peashooter = True  # Activate placement mode
-               elif placing_peashooter:  # Click on lanes to place
+                   peashooter_card.set_alpha(180)  # Make card semi-transparent
+               
+               elif placing_peashooter:  # Click on tiles to place
                    mouse_x, mouse_y = event.pos
-                   for lane_y in lanes:
-                       if abs(mouse_y - lane_y) < 50:  # Within lane range
-                           # Check if already has peashooter in this lane
-                           already_placed = False
-                           for pea in peashooters:
-                               if abs(pea.y_cord - lane_y) < 50:
-                                   already_placed = True
-                                   break
-                           
-                           if not already_placed:
-                               peashooters.append(peashooter(240, lane_y))
-                           
-                           placing_peashooter = False
+                   # Find which tile was clicked
+                   clicked_col = None
+                   clicked_row = None
+                   
+                   for col in range(tile_cols):
+                       if grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width:
+                           clicked_col = col
                            break
+                   
+                   for row in range(tile_rows):
+                       if grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height:
+                           clicked_row = row
+                           break
+                   
+                   # Place peashooter if valid tile
+                   if clicked_col is not None and clicked_row is not None:
+                       if (clicked_col, clicked_row) not in occupied_tiles:
+                           x, y = tile_positions[(clicked_col, clicked_row)]
+                           occupied_tiles[(clicked_col, clicked_row)] = peashooter(x, y)
+                       placing_peashooter = False
+                       peashooter_card.set_alpha(255)  # Restore card to full opacity
         
         keys = pygame.key.get_pressed()
         
-        if shoot_cooldown > 0:
-            shoot_cooldown -= 0.5
-        
-        if shoot_cooldown == 0:
-            for pea in peashooters:
-                # Check if any zombie is in this peashooter's lane
-                for zomb in zombies:
-                    if abs(zomb.y_cord - pea.y_cord) < 100:  # Within lane range
-                        peaballs.append(peaBall(pea))
-                        break  # Only shoot once per peashooter
-            shoot_cooldown = shoot_rate
-        # Spawn zombies
-        if zombie_cooldown > 0:
-            zombie_cooldown -= 0.5
-        
-        if zombie_cooldown == 0:
-            zombies.append(zombie(choice(lanes)))
-             # Adjust rate based on score
-            zombie_rate = max(20, 100 - (score // 100))
-            zombie_cooldown = zombie_rate
-        
-        # Update peaballs and check collision with zombies
-        for peaball in peaballs[:]:
-            is_offscreen = peaball.update()
+        if not game_over:
+            # Update each peashooter's shooting
+            for tile_pos, pea in occupied_tiles.items():
+                if pea.shoot_cooldown > 0:
+                    pea.shoot_cooldown -= 0.5
 
-            if is_offscreen:
-                if peaball in peaballs:
-                    peaballs.remove(peaball)
-                continue
+                # Check if this specific peashooter can shoot
+                if pea.shoot_cooldown == 0:
+                    # Check if any zombie is in this peashooter's lane
+                    for zomb in zombies:
+                        if abs(zomb.y_cord - pea.y_cord) < 100:  # Same row
+                            peaballs.append(peaBall(pea))
+                            pea.shoot_cooldown = shoot_rate  # Reset cooldown
+                            break
             
-            # Check collision with zombies
-            for zomb in zombies[:]:
-                if peaball.hitbox.colliderect(zomb.hitbox):
-                    zomb.hp -= 25
-                    if zomb.hp <= 0:
-                        zombies.remove(zomb)
-                        score += 100
+            # Spawn zombies
+            if zombie_cooldown > 0:
+                zombie_cooldown -= 0.5
+            
+            if zombie_cooldown == 0:
+                wave_count = get_wave_count(elapsed_time)
+                for _ in range(wave_count):
+                    random_row = randint(0, tile_rows - 1)
+                    y = grid_start_y + random_row * tile_height
+                    zombies.append(zombie(y))
+                
+                zombie_rate = max(20, 100 - (score // 100))
+                zombie_cooldown = zombie_rate
+            
+            # Update peaballs and check collision with zombies
+            for peaball in peaballs[:]:
+                is_offscreen = peaball.update()
+
+                if is_offscreen:
                     if peaball in peaballs:
                         peaballs.remove(peaball)
-                    break
-        
-        # Move zombies
-        for zomb in zombies[:]:
-            zomb.move()
-            if zomb.x_cord < 0:
-                if zomb in zombies:
-                    zombies.remove(zomb)
-        
-        if scoreCooldown > 0:
-            scoreCooldown -= 1
-        
-        if scoreCooldown == 0:
-            score += 1
-            scoreCooldown = scoreRate
+                    continue
+                
+                # Check collision with zombies
+                for zomb in zombies[:]:
+                    if peaball.hitbox.colliderect(zomb.hitbox):
+                        zomb.hp -= 25
+                        if zomb.hp <= 0:
+                            zombies.remove(zomb)
+                            score += 100
+                        if peaball in peaballs:
+                            peaballs.remove(peaball)
+                        break
+            
+            # Move zombies
+            for zomb in zombies[:]:
+                zomb.move()
+                # Check if zombie reached the house (behind peashooters)
+                if zomb.x_cord < 200:
+                    game_over = True
+                if zomb.x_cord < 0:
+                    if zomb in zombies:
+                        zombies.remove(zomb)
+            
+            if scoreCooldown > 0:
+                scoreCooldown -= 1
+            
+            if scoreCooldown == 0:
+                score += 1
+                scoreCooldown = scoreRate
             
         window.blit(background,(0,0))
         window.blit(peashooter_card, card_rect)
@@ -192,23 +245,53 @@ def main():
         for zomb in zombies:
             pygame.draw.rect(window, (0, 255, 0), zomb.hitbox, 2)
         
+        # Draw tile hitboxes
+        # for col in range(tile_cols):
+        #     for row in range(tile_rows):
+        #         x = grid_start_x + col * tile_width
+        #         y = grid_start_y + row * tile_height
+        #         tile_rect = pygame.Rect(x, y, tile_width, tile_height)
+        #         pygame.draw.rect(window, (255, 0, 0), tile_rect, 1)
+        
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
         window.blit(score_text, (20, 20))
         
-        for pea in peashooters:
+        for tile_pos, pea in occupied_tiles.items():
             pea.draw()
         
         if placing_peashooter:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            # Check if cursor is in any lane
+            # Check if cursor is in any tile
+            for col in range(tile_cols):
+                for row in range(tile_rows):
+                    if (grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width and
+                        grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height):
+                        if (col, row) not in occupied_tiles:
+                            preview_image = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooterZsk.png'))
+                            preview_image = pygame.transform.scale(preview_image, (80, 80))
+                            preview_image.set_alpha(180)  # 50% transparent
+                            x, y = tile_positions[(col, row)]
+                            window.blit(preview_image, (x, y))  # Show at tile position
+                        break
+        
+        # Display game over screen
+        if game_over:
+            overlay = pygame.Surface((1400, 600))
+            overlay.set_alpha(180)
+            overlay.fill((0, 0, 0))
+            window.blit(overlay, (0, 0))
             
-            for lane_y in lanes:
-                if abs(mouse_y - lane_y) < 50:  # Within lane range
-                    preview_image = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooterZsk.png'))
-                    preview_image = pygame.transform.scale(preview_image, (100, 100))
-                    preview_image.set_alpha(128)  # 50% transparent
-                    window.blit(preview_image, (240, lane_y))  # Show at placement position
-                    break
+            game_over_text = bigFont.render("GAME OVER", True, (255, 0, 0))
+            final_score_text = font.render(f"Final Score: {score}", True, (255, 255, 255))
+            restart_text = font.render("Press R to Restart or Q to Quit", True, (255, 255, 255))
+            
+            game_over_rect = game_over_text.get_rect(center=(700, 200))
+            score_rect = final_score_text.get_rect(center=(700, 300))
+            restart_rect = restart_text.get_rect(center=(700, 400))
+            
+            window.blit(game_over_text, game_over_rect)
+            window.blit(final_score_text, score_rect)
+            window.blit(restart_text, restart_rect)
         
         pygame.display.update()
 
