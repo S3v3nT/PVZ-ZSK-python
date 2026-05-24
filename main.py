@@ -8,7 +8,7 @@ print("Katalog skryptu:", os.path.dirname(os.path.abspath(__file__)))
 scriptDir = os.path.dirname(os.path.abspath(__file__))
 
 class peashooter:
-    def __init__(self, x_cord=200, y_cord=60):
+    def __init__(self, x_cord, y_cord):
         self.shoot_cooldown = 0
         self.x_cord = x_cord
         self.y_cord = y_cord
@@ -55,27 +55,54 @@ class zombie:
         self.x_cord = 1400
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'zombie.png'))
-        self.image = pygame.transform.scale(self.image, (75, 125))  # width, height
+        self.image = pygame.transform.scale(self.image, (75, 125))
+        
         self.hp = 200
+        
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+    
     def draw(self):
         window.blit(self.image,(self.x_cord, self.y_cord))
+    
     def move(self):
         self.x_cord -= 0.5
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+    
 def get_wave_count(elapsed_time):
     """Return how many zombies to spawn based on game time"""
-    if elapsed_time < 60:
-        return 1  # Wave 1: 1 zombie (0-60 seconds)
+    if elapsed_time < 10:
+        return 0
+    if elapsed_time < 30 and elapsed_time > 10:
+        return 1  # Wave 1: 1 zombie (10-30 seconds)
+    elif elapsed_time < 60:
+        return 2  # Wave 2: 2 zombies (30-60 seconds)
     elif elapsed_time < 120:
-        return 2  # Wave 2: 2 zombies (60-120 seconds)
+        return 3  # Wave 3: 3 zombies (60-120 seconds)
     elif elapsed_time < 180:
-        return 3  # Wave 3: 3 zombies (120-180 seconds)
+        return 4
+    elif elapsed_time < 240:
+        return 5
     else:
-        return randint(4, 7)  # Wave 4+: random 4-7 zombies (180+ seconds)
+        return randint(6, 10)  # Wave 4+: random 4-7 zombies (180+ seconds)
+
+class Sunflower:
+    def __init__(self, x_cord, y_cord):
+        self.production_cooldown = 0
+        self.x_cord = x_cord
+        self.y_cord = y_cord
+        self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerZsk.png'))
+        self.image = pygame.transform.scale(self.image, (80, 80))  # width, height
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        
+        self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+
+    def draw(self):
+        window.blit(self.image, (self.x_cord, self.y_cord))
+
 def main():
     placing_peashooter = False
     elapsed_time = 0  # Track seconds elapsed
@@ -102,9 +129,12 @@ def main():
     peaballs = []
     zombies = []
     score = 0
+    sunCurrency = 25
+    
     peashooter_card = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooterCard.png'))
-    peashooter_card = pygame.transform.scale(peashooter_card, (80, 100))  # Adjust size as needed
-    card_rect = peashooter_card.get_rect(topleft=(20, 100))  # Position it (x, y)
+    peashooter_card = pygame.transform.scale(peashooter_card, (80, 100))
+    peaShooterCard_rect = peashooter_card.get_rect(topleft=(20, 100))
+    
     font = pygame.font.SysFont(None, 36)
     bigFont = pygame.font.SysFont(None, 70)
     
@@ -134,7 +164,7 @@ def main():
                     elif event.key == pygame.K_q:
                         run = False
             if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-               if card_rect.collidepoint(event.pos):
+               if peaShooterCard_rect.collidepoint(event.pos) and sunCurrency >= 100:
                    placing_peashooter = True  # Activate placement mode
                    peashooter_card.set_alpha(180)  # Make card semi-transparent
                
@@ -159,6 +189,7 @@ def main():
                        if (clicked_col, clicked_row) not in occupied_tiles:
                            x, y = tile_positions[(clicked_col, clicked_row)]
                            occupied_tiles[(clicked_col, clicked_row)] = peashooter(x, y)
+                       sunCurrency -= 100
                        placing_peashooter = False
                        peashooter_card.set_alpha(255)  # Restore card to full opacity
         
@@ -231,7 +262,7 @@ def main():
                 scoreCooldown = scoreRate
             
         window.blit(background,(0,0))
-        window.blit(peashooter_card, card_rect)
+        window.blit(peashooter_card, peaShooterCard_rect)
         
         for peaball in peaballs:
             peaball.draw()
@@ -255,6 +286,9 @@ def main():
         
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
         window.blit(score_text, (20, 20))
+        
+        sunCurrency_text = font.render(f"Suns: {sunCurrency}", True, (255, 255, 255))
+        window.blit(sunCurrency_text, (20, 75))
         
         for tile_pos, pea in occupied_tiles.items():
             pea.draw()
