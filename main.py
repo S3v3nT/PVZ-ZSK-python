@@ -57,7 +57,7 @@ class zombie:
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'zombie.png'))
         self.image = pygame.transform.scale(self.image, (75, 125))
         
-        self.hp = 200
+        self.hp = 150
         
         self.width = self.image.get_width()
         self.height = self.image.get_height()
@@ -91,6 +91,7 @@ def get_wave_count(elapsed_time):
 class Sunflower:
     def __init__(self, x_cord, y_cord):
         self.production_cooldown = 0
+        self.production_rate = 180
         self.x_cord = x_cord
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerZsk.png'))
@@ -103,8 +104,28 @@ class Sunflower:
     def draw(self):
         window.blit(self.image, (self.x_cord, self.y_cord))
 
+class SunBall:
+    def __init__(self, sunflower):
+        self.sunflower = sunflower
+        self.x_cord = randint(self.sunflower.x_cord - 20, self.sunflower.x_cord + self.sunflower.width + 20)
+        self.y_cord = randint(self.sunflower.y_cord - 10, self.sunflower.y_cord + self.sunflower.height + 10)
+        self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sun.png'))
+        self.image = pygame.transform.scale(self.image, (50, 50))
+        
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        
+        self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+    
+    def draw(self):
+        window.blit(self.image, (self.x_cord, self.y_cord))
+    
+    def is_clicked(self, mouse_pos):
+        return self.hitbox.collidepoint(mouse_pos)
+
 def main():
     placing_peashooter = False
+    placing_sunflower = False
     elapsed_time = 0  # Track seconds elapsed
     # 9x5 tile grid system
     tile_cols = 9
@@ -127,7 +148,9 @@ def main():
     run = True
     game_over = False
     peaballs = []
+    sunflowers = []
     zombies = []
+    suns = []
     score = 0
     sunCurrency = 25
     
@@ -138,6 +161,8 @@ def main():
     sunflower_card = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerCard.png'))
     sunflower_card = pygame.transform.scale(sunflower_card, (80, 100))
     sunflowerCard_rect = sunflower_card.get_rect(topleft=(20, 220))
+    
+    
         
     font = pygame.font.SysFont(None, 36)
     bigFont = pygame.font.SysFont(None, 70)
@@ -168,51 +193,98 @@ def main():
                     elif event.key == pygame.K_q:
                         run = False
             if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-               if peaShooterCard_rect.collidepoint(event.pos) and sunCurrency >= 100:
-                   placing_peashooter = True  # Activate placement mode
-                   peashooter_card.set_alpha(180)  # Make card semi-transparent
+                
+                clicked_sun = False
+                for sun in suns[:]:
+                    if sun.is_clicked(event.pos):
+                        sunCurrency += 25
+                        suns.remove(sun)
+                        clicked_sun = True
+                        break
+
+                if clicked_sun:
+                    continue
+
+                if sunflowerCard_rect.collidepoint(event.pos) and sunCurrency >= 25:
+                    placing_sunflower = True  
+                    sunflower_card.set_alpha(180)  
+                    placing_peashooter = False
+                    peashooter_card.set_alpha(255)
                
-               elif placing_peashooter:  # Click on tiles to place
-                   mouse_x, mouse_y = event.pos
-                   # Find which tile was clicked
-                   clicked_col = None
-                   clicked_row = None
+                elif placing_sunflower:  
+                    mouse_x, mouse_y = event.pos
+                    clicked_col = None
+                    clicked_row = None
                    
-                   for col in range(tile_cols):
-                       if grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width:
+                    for col in range(tile_cols):
+                        if grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width:
                            clicked_col = col
                            break
                    
-                   for row in range(tile_rows):
-                       if grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height:
+                    for row in range(tile_rows):
+                        if grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height:
                            clicked_row = row
                            break
                    
-                   # Place peashooter if valid tile
-                   if clicked_col is not None and clicked_row is not None:
-                       if (clicked_col, clicked_row) not in occupied_tiles:
-                           x, y = tile_positions[(clicked_col, clicked_row)]
-                           occupied_tiles[(clicked_col, clicked_row)] = peashooter(x, y)
-                       sunCurrency -= 100
-                       placing_peashooter = False
-                       peashooter_card.set_alpha(255)  # Restore card to full opacity
+                    if clicked_col is not None and clicked_row is not None:
+                        if (clicked_col, clicked_row) not in occupied_tiles:
+                            x, y = tile_positions[(clicked_col, clicked_row)]
+                            occupied_tiles[(clicked_col, clicked_row)] = Sunflower(x, y)
+                            sunCurrency -= 25
+                        placing_sunflower = False
+                        sunflower_card.set_alpha(255)  
+
+                elif peaShooterCard_rect.collidepoint(event.pos) and sunCurrency >= 100:
+                    placing_peashooter = True  
+                    peashooter_card.set_alpha(180)  
+                    placing_sunflower = False
+                    sunflower_card.set_alpha(255)
+               
+                elif placing_peashooter:  
+                    mouse_x, mouse_y = event.pos
+                    clicked_col = None
+                    clicked_row = None
+                   
+                    for col in range(tile_cols):
+                        if grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width:
+                           clicked_col = col
+                           break
+                   
+                    for row in range(tile_rows):
+                        if grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height:
+                           clicked_row = row
+                           break
+                   
+                    if clicked_col is not None and clicked_row is not None:
+                        if (clicked_col, clicked_row) not in occupied_tiles:
+                            x, y = tile_positions[(clicked_col, clicked_row)]
+                            occupied_tiles[(clicked_col, clicked_row)] = peashooter(x, y)
+                            sunCurrency -= 100
+                        placing_peashooter = False
+                        peashooter_card.set_alpha(255)
         
         keys = pygame.key.get_pressed()
         
         if not game_over:
-            # Update each peashooter's shooting
-            for tile_pos, pea in occupied_tiles.items():
-                if pea.shoot_cooldown > 0:
-                    pea.shoot_cooldown -= 0.5
+            for tile_pos, plant in occupied_tiles.items():
+                if isinstance(plant, peashooter):
+                    if plant.shoot_cooldown > 0:
+                        plant.shoot_cooldown -= 0.5
 
-                # Check if this specific peashooter can shoot
-                if pea.shoot_cooldown == 0:
-                    # Check if any zombie is in this peashooter's lane
-                    for zomb in zombies:
-                        if abs(zomb.y_cord - pea.y_cord) < 100:  # Same row
-                            peaballs.append(peaBall(pea))
-                            pea.shoot_cooldown = shoot_rate  # Reset cooldown
-                            break
+                    if plant.shoot_cooldown == 0:
+                        for zomb in zombies:
+                            if abs(zomb.y_cord - plant.y_cord) < 100:  
+                                peaballs.append(peaBall(plant))
+                                plant.shoot_cooldown = shoot_rate  
+                                break
+                                
+                elif isinstance(plant, Sunflower):
+                    if plant.production_cooldown > 0:
+                        plant.production_cooldown -= 1
+                    
+                    if plant.production_cooldown == 0:
+                        suns.append(SunBall(plant))
+                        plant.production_cooldown = plant.production_rate
             
             # Spawn zombies
             if zombie_cooldown > 0:
@@ -276,6 +348,9 @@ def main():
         for zomb in zombies:
             zomb.draw()
         
+        for sun in suns:
+            sun.draw()
+        
         for peaball in peaballs:
             pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
         
@@ -296,8 +371,14 @@ def main():
         sunCurrency_text = font.render(f"Suns: {sunCurrency}", True, (255, 255, 255))
         window.blit(sunCurrency_text, (20, 75))
         
+        for tile_pos, plant in occupied_tiles.items():
+            plant.draw()
+        
         for tile_pos, pea in occupied_tiles.items():
             pea.draw()
+        
+        for tile_pos, sunflowers in occupied_tiles.items():
+            sunflowers.draw()
         
         if placing_peashooter:
             mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -308,6 +389,21 @@ def main():
                         grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height):
                         if (col, row) not in occupied_tiles:
                             preview_image = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooterZsk.png'))
+                            preview_image = pygame.transform.scale(preview_image, (80, 80))
+                            preview_image.set_alpha(180)  # 50% transparent
+                            x, y = tile_positions[(col, row)]
+                            window.blit(preview_image, (x, y))  # Show at tile position
+                        break
+        
+        if placing_sunflower:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            # Check if cursor is in any tile
+            for col in range(tile_cols):
+                for row in range(tile_rows):
+                    if (grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width and
+                        grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height):
+                        if (col, row) not in occupied_tiles:
+                            preview_image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerZsk.png'))
                             preview_image = pygame.transform.scale(preview_image, (80, 80))
                             preview_image.set_alpha(180)  # 50% transparent
                             x, y = tile_positions[(col, row)]
