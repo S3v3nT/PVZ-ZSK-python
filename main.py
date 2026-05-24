@@ -146,6 +146,7 @@ def main():
     occupied_tiles = {}  # (col, row) -> peashooter object
     
     run = True
+    hitboxes = False
     game_over = False
     peaballs = []
     sunflowers = []
@@ -185,6 +186,10 @@ def main():
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 run = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_h:
+                    hitboxes = not hitboxes
+                
             if game_over:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
@@ -192,6 +197,7 @@ def main():
                         return main()
                     elif event.key == pygame.K_q:
                         run = False
+                
             if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
                 clicked_sun = False
                 for sun in suns[:]:
@@ -349,20 +355,6 @@ def main():
         for zomb in zombies:
             zomb.draw()
         
-        for peaball in peaballs:
-            pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
-        
-        for zomb in zombies:
-            pygame.draw.rect(window, (0, 255, 0), zomb.hitbox, 2)
-        
-        # Draw tile hitboxes
-        # for col in range(tile_cols):
-        #     for row in range(tile_rows):
-        #         x = grid_start_x + col * tile_width
-        #         y = grid_start_y + row * tile_height
-        #         tile_rect = pygame.Rect(x, y, tile_width, tile_height)
-        #         pygame.draw.rect(window, (255, 0, 0), tile_rect, 1)
-        
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
         window.blit(score_text, (20, 20))
         
@@ -410,6 +402,27 @@ def main():
                             x, y = tile_positions[(col, row)]
                             window.blit(preview_image, (x, y))  # Show at tile position
                         break
+        
+        if hitboxes:
+            for peaball in peaballs[:]:
+                pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
+        
+            for zomb in zombies[:]:
+                pygame.draw.rect(window, (0, 255, 0), zomb.hitbox, 2)
+            
+            for sun in suns[:]:
+                pygame.draw.rect(window, (0, 100, 255), sun.hitbox, 2)
+            
+            for tile_pos, pea in occupied_tiles.items():
+                pygame.draw.rect(window, (0, 100, 255), pea.hitbox, 2)
+        
+            # Draw tile hitboxes
+            for col in range(tile_cols):
+                for row in range(tile_rows):
+                    x = grid_start_x + col * tile_width
+                    y = grid_start_y + row * tile_height
+                    tile_rect = pygame.Rect(x, y, tile_width, tile_height)
+                    pygame.draw.rect(window, (255, 0, 0), tile_rect, 1)
         
         # Display game over screen
         if game_over:
