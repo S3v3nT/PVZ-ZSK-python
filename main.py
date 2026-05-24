@@ -135,6 +135,10 @@ def main():
     peashooter_card = pygame.transform.scale(peashooter_card, (80, 100))
     peaShooterCard_rect = peashooter_card.get_rect(topleft=(20, 100))
     
+    sunflower_card = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerCard.png'))
+    sunflower_card = pygame.transform.scale(sunflower_card, (80, 100))
+    sunflowerCard_rect = sunflower_card.get_rect(topleft=(20, 220))
+        
     font = pygame.font.SysFont(None, 36)
     bigFont = pygame.font.SysFont(None, 70)
     
@@ -262,7 +266,9 @@ def main():
                 scoreCooldown = scoreRate
             
         window.blit(background,(0,0))
+        
         window.blit(peashooter_card, peaShooterCard_rect)
+        window.blit(sunflower_card, sunflowerCard_rect)
         
         for peaball in peaballs:
             peaball.draw()
