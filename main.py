@@ -91,7 +91,7 @@ def get_wave_count(elapsed_time):
 class Sunflower:
     def __init__(self, x_cord, y_cord):
         self.production_cooldown = 0
-        self.production_rate = 180
+        self.production_rate = 150
         self.x_cord = x_cord
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerZsk.png'))
@@ -193,7 +193,6 @@ def main():
                     elif event.key == pygame.K_q:
                         run = False
             if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-                
                 clicked_sun = False
                 for sun in suns[:]:
                     if sun.is_clicked(event.pos):
@@ -284,7 +283,9 @@ def main():
                     
                     if plant.production_cooldown == 0:
                         suns.append(SunBall(plant))
-                        plant.production_cooldown = plant.production_rate
+                        sunflower_count = sum(1 for p in occupied_tiles.values() if isinstance(p, Sunflower))
+                        sunflower_penalty = 30
+                        plant.production_cooldown = min(480, plant.production_rate + (sunflower_count * sunflower_penalty))
             
             # Spawn zombies
             if zombie_cooldown > 0:
@@ -348,9 +349,6 @@ def main():
         for zomb in zombies:
             zomb.draw()
         
-        for sun in suns:
-            sun.draw()
-        
         for peaball in peaballs:
             pygame.draw.rect(window, (0, 100, 255), peaball.hitbox, 2)
         
@@ -379,6 +377,9 @@ def main():
         
         for tile_pos, sunflowers in occupied_tiles.items():
             sunflowers.draw()
+        
+        for sun in suns:
+            sun.draw()
         
         if placing_peashooter:
             mouse_x, mouse_y = pygame.mouse.get_pos()
