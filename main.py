@@ -74,7 +74,7 @@ def main():
     peaballs = []
     zombies = []
     score = 0
-    peashooter_card = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooter card.png'))
+    peashooter_card = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooterCard.png'))
     peashooter_card = pygame.transform.scale(peashooter_card, (80, 100))  # Adjust size as needed
     card_rect = peashooter_card.get_rect(topleft=(20, 100))  # Position it (x, y)
     font = pygame.font.SysFont(None, 36)
