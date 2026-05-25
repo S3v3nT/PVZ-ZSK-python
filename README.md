@@ -9,7 +9,7 @@ Projekt na podstawy programowania
 2. Architektura Gry
 - Główna pętla gry (Game Loop): Opisz krótko, jak zorganizowałeś trzy kluczowe etapy każdej gry w Pygame: obsługa zdarzeń (events), aktualizacja stanu (update) oraz rysowanie (draw). -
 3. Wykorzystane Assety
-Większość postaci w grze ma przerobioną teksturę z oryginalnej gry by pasowała do klimatu ZSK
+Większość postaci w grze ma przerobioną teksturę z oryginalnej gry (tzn. Plants VS Zombies) by pasowała do klimatu ZSK
 4. Implementacja funkcji
   - tu napisac jak zrobilismy system zycia itp. -
 5. Podsumowanie

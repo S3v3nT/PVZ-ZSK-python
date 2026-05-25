@@ -25,8 +25,8 @@ class peashooter:
 class peaBall:
     def __init__(self, peashooter):
         self.peashooter = peashooter
-        self.x_cord = peashooter.x_cord + peashooter.width - 20
-        self.y_cord = peashooter.y_cord + 25
+        self.x_cord = peashooter.x_cord + 50
+        self.y_cord = peashooter.y_cord + 5
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'peaBall.png'))
         self.image = pygame.transform.scale(self.image, (30, 30))  # width, height
         self.width = self.image.get_width()
