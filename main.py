@@ -92,7 +92,7 @@ def get_wave_count(elapsed_time):
 
 class Sunflower:
     def __init__(self, x_cord, y_cord):
-        self.production_cooldown = 150
+        self.production_cooldown = 100
         self.production_rate = 150
         self.x_cord = x_cord
         self.y_cord = y_cord
@@ -192,16 +192,16 @@ def main():
     
     background = pygame.image.load(os.path.join(scriptDir, 'assets', 'ogrod.jpg'))
     scoreCooldown = 0
-    scoreRate = 30
+    scoreRate = 60
     
     zombie_cooldown = 0
     zombie_rate = 60
     
     peashooter_place_cooldown = 0
-    peashooter_place_rate = 500
+    peashooter_place_rate = 240
     
     sunflower_place_cooldown = 0
-    sunflower_place_rate = 500
+    sunflower_place_rate = 120
 
     pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'zombies.mp3'))
     pygame.mixer.music.play(0)
@@ -321,17 +321,17 @@ def main():
                                 
                 elif isinstance(plant, Sunflower):
                     if plant.production_cooldown > 0:
-                        plant.production_cooldown -= 0.5
+                        plant.production_cooldown -= 1
                     
                     if plant.production_cooldown == 0:
                         suns.append(SunBall(plant))
                         sunflower_count = sum(1 for p in occupied_tiles.values() if isinstance(p, Sunflower))
-                        sunflower_penalty = 30
+                        sunflower_penalty = 20
                         plant.production_cooldown = min(480, plant.production_rate + (sunflower_count * sunflower_penalty))
             
             # Spawn zombies
             if zombie_cooldown > 0:
-                zombie_cooldown -= 0.3
+                zombie_cooldown -= 0.5
             
             if zombie_cooldown == 0:
                 wave_count = get_wave_count(elapsed_time)
