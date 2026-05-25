@@ -2,6 +2,7 @@ import pygame
 import os
 from random import randint, choice
 pygame.init()
+pygame.mixer.init()  # Initialize the mixer for sound
 window = pygame.display.set_mode((1400,600))
 print("Aktualny katalog roboczy:", os.getcwd())
 print("Katalog skryptu:", os.path.dirname(os.path.abspath(__file__)))
@@ -91,12 +92,12 @@ def get_wave_count(elapsed_time):
 
 class Sunflower:
     def __init__(self, x_cord, y_cord):
-        self.production_cooldown = 0
+        self.production_cooldown = 150
         self.production_rate = 150
         self.x_cord = x_cord
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerZsk.png'))
-        self.image = pygame.transform.scale(self.image, (80, 80))  # width, height
+        self.image = pygame.transform.scale(self.image, (100, 100))  # width, height
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         
@@ -111,7 +112,7 @@ class SunBall:
         self.x_cord = randint(self.sunflower.x_cord - 20, self.sunflower.x_cord + self.sunflower.width + 20)
         self.y_cord = randint(self.sunflower.y_cord - 10, self.sunflower.y_cord + self.sunflower.height + 10)
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sun.png'))
-        self.image = pygame.transform.scale(self.image, (50, 50))
+        self.image = pygame.transform.scale(self.image, (60, 60))
         
         self.width = self.image.get_width()
         self.height = self.image.get_height()
@@ -138,6 +139,10 @@ class Wallnut:
     
 
 def main():
+    peashooter_place_cooldown = 0
+    peashooter_place_rate = 60  # cooldown in frames (60 frames = 1 second at 60 FPS)
+    sunflower_place_cooldown = 0
+    sunflower_place_rate = 60
     placing_peashooter = False
     placing_sunflower = False
     elapsed_time = 0  # Track seconds elapsed
@@ -186,17 +191,36 @@ def main():
     clock = pygame.time.Clock()
     
     background = pygame.image.load(os.path.join(scriptDir, 'assets', 'ogrod.jpg'))
-    
     scoreCooldown = 0
     scoreRate = 30
     
     zombie_cooldown = 0
     zombie_rate = 60
     
+    peashooter_place_cooldown = 0
+    peashooter_place_rate = 500
+    
+    sunflower_place_cooldown = 0
+    sunflower_place_rate = 500
+
+    pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'zombies.mp3'))
+    pygame.mixer.music.play(0)
+    pygame.mixer.music.set_volume(1)
+
     while run:
         clock.tick(60) 
         elapsed_time += 1/60 
         pygame.time.Clock().tick(60)
+        if elapsed_time > 4:  # Start music after 2 seconds
+           if not pygame.mixer.music.get_busy():
+               pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'theme_music.mp3'))
+               pygame.mixer.music.play(-1)
+               pygame.mixer.music.set_volume(0.075)  # Set volume to 50% (adjust 0-1)
+        if peashooter_place_cooldown > 0:
+           peashooter_place_cooldown -= 1
+    
+        if sunflower_place_cooldown > 0:
+           sunflower_place_cooldown -= 1
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 run = False
@@ -224,9 +248,8 @@ def main():
                 if clicked_sun:
                     continue
 
-                if sunflowerCard_rect.collidepoint(event.pos) and sunCurrency >= 25:
+                if sunflowerCard_rect.collidepoint(event.pos) and sunCurrency >= 25 and sunflower_place_cooldown == 0:
                     placing_sunflower = True  
-                    sunflower_card.set_alpha(180)  
                     placing_peashooter = False
                     peashooter_card.set_alpha(255)
                
@@ -250,12 +273,11 @@ def main():
                             x, y = tile_positions[(clicked_col, clicked_row)]
                             occupied_tiles[(clicked_col, clicked_row)] = Sunflower(x, y)
                             sunCurrency -= 25
-                        placing_sunflower = False
-                        sunflower_card.set_alpha(255)  
+                            sunflower_place_cooldown = sunflower_place_rate
+                        placing_sunflower = False  
 
-                elif peaShooterCard_rect.collidepoint(event.pos) and sunCurrency >= 100:
+                elif peaShooterCard_rect.collidepoint(event.pos) and sunCurrency >= 100 and peashooter_place_cooldown == 0:
                     placing_peashooter = True  
-                    peashooter_card.set_alpha(180)  
                     placing_sunflower = False
                     sunflower_card.set_alpha(255)
                
@@ -279,8 +301,8 @@ def main():
                             x, y = tile_positions[(clicked_col, clicked_row)]
                             occupied_tiles[(clicked_col, clicked_row)] = peashooter(x, y)
                             sunCurrency -= 100
+                            peashooter_place_cooldown = peashooter_place_rate
                         placing_peashooter = False
-                        peashooter_card.set_alpha(255)
         
         keys = pygame.key.get_pressed()
         
@@ -299,7 +321,7 @@ def main():
                                 
                 elif isinstance(plant, Sunflower):
                     if plant.production_cooldown > 0:
-                        plant.production_cooldown -= 1
+                        plant.production_cooldown -= 0.5
                     
                     if plant.production_cooldown == 0:
                         suns.append(SunBall(plant))
@@ -309,7 +331,7 @@ def main():
             
             # Spawn zombies
             if zombie_cooldown > 0:
-                zombie_cooldown -= 0.5
+                zombie_cooldown -= 0.3
             
             if zombie_cooldown == 0:
                 wave_count = get_wave_count(elapsed_time)
@@ -359,6 +381,23 @@ def main():
                 scoreCooldown = scoreRate
             
         window.blit(background,(0,0))
+        
+        # Update card transparency based on cooldown and placing state
+        if peashooter_place_cooldown > 0:
+            peashooter_alpha = int(255 * (1 - peashooter_place_cooldown / peashooter_place_rate))
+            peashooter_card.set_alpha(peashooter_alpha)
+        elif placing_peashooter:
+            peashooter_card.set_alpha(180)
+        else:
+            peashooter_card.set_alpha(255)
+        
+        if sunflower_place_cooldown > 0:
+            sunflower_alpha = int(255 * (1 - sunflower_place_cooldown / sunflower_place_rate))
+            sunflower_card.set_alpha(sunflower_alpha)
+        elif placing_sunflower:
+            sunflower_card.set_alpha(180)
+        else:
+            sunflower_card.set_alpha(255)
         
         window.blit(peashooter_card, peaShooterCard_rect)
         window.blit(sunflower_card, sunflowerCard_rect)
