@@ -10,6 +10,7 @@ scriptDir = os.path.dirname(os.path.abspath(__file__))
 class peashooter:
     def __init__(self, x_cord, y_cord):
         self.shoot_cooldown = 0
+        self.shoot_rate = 50
         self.x_cord = x_cord
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'peashooterZsk.png'))
@@ -57,7 +58,7 @@ class zombie:
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'zombie.png'))
         self.image = pygame.transform.scale(self.image, (75, 125))
         
-        self.hp = 150
+        self.hp = 125
         
         self.width = self.image.get_width()
         self.height = self.image.get_height()
@@ -68,25 +69,25 @@ class zombie:
         window.blit(self.image,(self.x_cord, self.y_cord))
     
     def move(self):
-        self.x_cord -= 0.5
+        self.x_cord -= 0.62
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
     
 def get_wave_count(elapsed_time):
     """Return how many zombies to spawn based on game time"""
     if elapsed_time < 10:
         return 0
-    if elapsed_time < 30 and elapsed_time > 10:
+    elif elapsed_time < 30:
         return 1  # Wave 1: 1 zombie (10-30 seconds)
     elif elapsed_time < 60:
-        return 2  # Wave 2: 2 zombies (30-60 seconds)
+        return 2
     elif elapsed_time < 120:
-        return 3  # Wave 3: 3 zombies (60-120 seconds)
+        return 3
     elif elapsed_time < 180:
         return 4
     elif elapsed_time < 240:
         return 5
     else:
-        return randint(6, 10)  # Wave 4+: random 4-7 zombies (180+ seconds)
+        return randint(6, 8)
 
 class Sunflower:
     def __init__(self, x_cord, y_cord):
@@ -123,6 +124,19 @@ class SunBall:
     def is_clicked(self, mouse_pos):
         return self.hitbox.collidepoint(mouse_pos)
 
+class Wallnut:
+    def __init__(self, x_cord, y_cord):
+        self.x_cord = x_cord
+        self.y_cord = y_cord
+        self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'wallnut.png'))
+        self.image = pygame.transform.scale(self.image, (80, 80))
+        
+        self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+    
+    def draw(self):
+        window.blit(self.image, (self.x_cord, self.y_cord))
+    
+
 def main():
     placing_peashooter = False
     placing_sunflower = False
@@ -150,6 +164,7 @@ def main():
     game_over = False
     peaballs = []
     sunflowers = []
+    wallnuts = []
     zombies = []
     suns = []
     score = 0
@@ -171,7 +186,6 @@ def main():
     clock = pygame.time.Clock()
     
     background = pygame.image.load(os.path.join(scriptDir, 'assets', 'ogrod.jpg'))
-    shoot_rate = 45
     
     scoreCooldown = 0
     scoreRate = 30
@@ -280,7 +294,7 @@ def main():
                         for zomb in zombies:
                             if abs(zomb.y_cord - plant.y_cord) < 100:  
                                 peaballs.append(peaBall(plant))
-                                plant.shoot_cooldown = shoot_rate  
+                                plant.shoot_cooldown = plant.shoot_rate  
                                 break
                                 
                 elif isinstance(plant, Sunflower):
@@ -322,7 +336,7 @@ def main():
                         zomb.hp -= 25
                         if zomb.hp <= 0:
                             zombies.remove(zomb)
-                            score += 100
+                            score += 50
                         if peaball in peaballs:
                             peaballs.remove(peaball)
                         break
