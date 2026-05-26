@@ -168,6 +168,7 @@ def main():
     hitboxes = False
     game_over = False
     peaballs = []
+    music_mode = "background"  # Track which music is playing
     sunflowers = []
     wallnuts = []
     zombies = []
@@ -183,7 +184,9 @@ def main():
     sunflower_card = pygame.transform.scale(sunflower_card, (80, 100))
     sunflowerCard_rect = sunflower_card.get_rect(topleft=(20, 220))
     
-    
+    music_button = pygame.image.load(os.path.join(scriptDir, 'assets', 'music_off.png'))
+    music_button = pygame.transform.scale(music_button, (100, 100))
+    music_button_rect = music_button.get_rect(topright=(1330, 20))
         
     font = pygame.font.SysFont(None, 36)
     bigFont = pygame.font.SysFont(None, 70)
@@ -213,9 +216,16 @@ def main():
         pygame.time.Clock().tick(60)
         if elapsed_time > 4:  # Start music after 2 seconds
            if not pygame.mixer.music.get_busy():
-               pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'theme_music.mp3'))
-               pygame.mixer.music.play(-1)
-               pygame.mixer.music.set_volume(0.075)  # Set volume to 50% (adjust 0-1)
+               if music_mode == "background":
+                   pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'background_music.mp3'))
+                   pygame.mixer.music.play(-1)
+                   pygame.mixer.music.set_volume(0.075)
+               else:
+                   pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'music.mp3'))
+                   pygame.mixer.music.play(-1)
+                   pygame.mixer.music.set_volume(0.075)
+
+
         if peashooter_place_cooldown > 0:
            peashooter_place_cooldown -= 1
     
@@ -237,6 +247,21 @@ def main():
                         run = False
                 
             if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
+                # Check if music button was clicked
+                if music_button_rect.collidepoint(event.pos):
+                    if music_mode == "background":
+                        music_mode = "music"
+                        music_button = pygame.image.load(os.path.join(scriptDir, 'assets', 'music_on.png'))
+                        pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'music.mp3'))
+                        pygame.mixer.music.play(-1)
+                    else:
+                        music_mode = "background"
+                        music_button = pygame.image.load(os.path.join(scriptDir, 'assets', 'music_off.png'))
+                        pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'background_music.mp3'))
+                        pygame.mixer.music.play(-1)
+                    music_button = pygame.transform.scale(music_button, (100, 100))
+                    continue
+                
                 clicked_sun = False
                 for sun in suns[:]:
                     if sun.is_clicked(event.pos):
@@ -401,6 +426,7 @@ def main():
         
         window.blit(peashooter_card, peaShooterCard_rect)
         window.blit(sunflower_card, sunflowerCard_rect)
+        window.blit(music_button, music_button_rect)
         
         for peaball in peaballs:
             peaball.draw()
