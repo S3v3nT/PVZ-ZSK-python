@@ -169,6 +169,9 @@ def main():
     game_over = False
     peaballs = []
     music_mode = "background"  # Track which music is playing
+    disco_frame = 0  # Counter for disco effect
+    disco_color = [randint(0, 255), randint(0, 255), randint(0, 255)]  # Current color
+    disco_target_color = [randint(0, 255), randint(0, 255), randint(0, 255)]  # Target color
     sunflowers = []
     wallnuts = []
     zombies = []
