@@ -193,15 +193,14 @@ def main():
     sunflower_card = pygame.transform.scale(sunflower_card, (80, 100))
     sunflowerCard_rect = sunflower_card.get_rect(topleft=(20, 220))
     
-<<<<<<< HEAD
     music_button = pygame.image.load(os.path.join(scriptDir, 'assets', 'music_off.png'))
     music_button = pygame.transform.scale(music_button, (100, 100))
     music_button_rect = music_button.get_rect(topright=(1330, 20))
-=======
+    
     wallnut_card = pygame.image.load(os.path.join(scriptDir, 'assets', 'wallnutCard.png'))
     wallnut_card = pygame.transform.scale(wallnut_card, (80, 100))
     wallnutCard_rect = wallnut_card.get_rect(topleft=(20, 340))
->>>>>>> 3234c2cfe0013570484f49656533d4f7d2b6af49
+        
         
     font = pygame.font.SysFont(None, 36)
     bigFont = pygame.font.SysFont(None, 70)
@@ -485,14 +484,11 @@ def main():
         
         window.blit(peashooter_card, peaShooterCard_rect)
         window.blit(sunflower_card, sunflowerCard_rect)
-<<<<<<< HEAD
         window.blit(music_button, music_button_rect)
         
         for peaball in peaballs:
             peaball.draw()
-=======
         window.blit(wallnut_card, wallnutCard_rect)
->>>>>>> 3234c2cfe0013570484f49656533d4f7d2b6af49
         
         for zomb in zombies:
             zomb.draw()
