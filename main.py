@@ -92,12 +92,12 @@ def get_wave_count(elapsed_time):
 
 class Sunflower:
     def __init__(self, x_cord, y_cord):
-        self.production_cooldown = 150
+        self.production_cooldown = 100
         self.production_rate = 150
         self.x_cord = x_cord
         self.y_cord = y_cord
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerZsk.png'))
-        self.image = pygame.transform.scale(self.image, (100, 100))  # width, height
+        self.image = pygame.transform.scale(self.image, (80, 80))  # width, height
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         
@@ -132,7 +132,12 @@ class Wallnut:
         self.image = pygame.image.load(os.path.join(scriptDir, 'assets', 'wallnut.png'))
         self.image = pygame.transform.scale(self.image, (80, 80))
         
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+        
+        self.hp = 250
     
     def draw(self):
         window.blit(self.image, (self.x_cord, self.y_cord))
@@ -145,6 +150,7 @@ def main():
     sunflower_place_rate = 60
     placing_peashooter = False
     placing_sunflower = False
+    placing_wallnut = False
     elapsed_time = 0  # Track seconds elapsed
     # 9x5 tile grid system
     tile_cols = 9
@@ -187,9 +193,15 @@ def main():
     sunflower_card = pygame.transform.scale(sunflower_card, (80, 100))
     sunflowerCard_rect = sunflower_card.get_rect(topleft=(20, 220))
     
+<<<<<<< HEAD
     music_button = pygame.image.load(os.path.join(scriptDir, 'assets', 'music_off.png'))
     music_button = pygame.transform.scale(music_button, (100, 100))
     music_button_rect = music_button.get_rect(topright=(1330, 20))
+=======
+    wallnut_card = pygame.image.load(os.path.join(scriptDir, 'assets', 'wallnutCard.png'))
+    wallnut_card = pygame.transform.scale(wallnut_card, (80, 100))
+    wallnutCard_rect = wallnut_card.get_rect(topleft=(20, 340))
+>>>>>>> 3234c2cfe0013570484f49656533d4f7d2b6af49
         
     font = pygame.font.SysFont(None, 36)
     bigFont = pygame.font.SysFont(None, 70)
@@ -198,16 +210,19 @@ def main():
     
     background = pygame.image.load(os.path.join(scriptDir, 'assets', 'ogrod.jpg'))
     scoreCooldown = 0
-    scoreRate = 30
+    scoreRate = 60
     
     zombie_cooldown = 0
     zombie_rate = 60
     
     peashooter_place_cooldown = 0
-    peashooter_place_rate = 500
+    peashooter_place_rate = 240
     
     sunflower_place_cooldown = 0
-    sunflower_place_rate = 500
+    sunflower_place_rate = 120
+    
+    wallnut_place_cooldown = 0
+    wallnut_place_rate = 120
 
     pygame.mixer.music.load(os.path.join(scriptDir, 'assets', 'zombies.mp3'))
     pygame.mixer.music.play(0)
@@ -234,6 +249,10 @@ def main():
     
         if sunflower_place_cooldown > 0:
            sunflower_place_cooldown -= 1
+        
+        if wallnut_place_cooldown > 0:
+            wallnut_place_cooldown -= 1
+        
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 run = False
@@ -331,6 +350,35 @@ def main():
                             sunCurrency -= 100
                             peashooter_place_cooldown = peashooter_place_rate
                         placing_peashooter = False
+                
+                elif wallnutCard_rect.collidepoint(event.pos) and sunCurrency >= 50 and wallnut_place_cooldown == 0:
+                    placing_wallnut = True  
+                    placing_sunflower = False
+                    placing_peashooter = False
+                    wallnut_card.set_alpha(255)
+               
+                elif placing_wallnut:  
+                    mouse_x, mouse_y = event.pos
+                    clicked_col = None
+                    clicked_row = None
+                   
+                    for col in range(tile_cols):
+                        if grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width:
+                           clicked_col = col
+                           break
+                   
+                    for row in range(tile_rows):
+                        if grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height:
+                           clicked_row = row
+                           break
+                   
+                    if clicked_col is not None and clicked_row is not None:
+                        if (clicked_col, clicked_row) not in occupied_tiles:
+                            x, y = tile_positions[(clicked_col, clicked_row)]
+                            occupied_tiles[(clicked_col, clicked_row)] = Wallnut(x, y)
+                            sunCurrency -= 50
+                            wallnut_place_cooldown = wallnut_place_rate
+                        placing_wallnut = False
         
         keys = pygame.key.get_pressed()
         
@@ -349,17 +397,17 @@ def main():
                                 
                 elif isinstance(plant, Sunflower):
                     if plant.production_cooldown > 0:
-                        plant.production_cooldown -= 0.5
+                        plant.production_cooldown -= 1
                     
                     if plant.production_cooldown == 0:
                         suns.append(SunBall(plant))
                         sunflower_count = sum(1 for p in occupied_tiles.values() if isinstance(p, Sunflower))
-                        sunflower_penalty = 30
+                        sunflower_penalty = 20
                         plant.production_cooldown = min(480, plant.production_rate + (sunflower_count * sunflower_penalty))
             
             # Spawn zombies
             if zombie_cooldown > 0:
-                zombie_cooldown -= 0.3
+                zombie_cooldown -= 0.5
             
             if zombie_cooldown == 0:
                 wave_count = get_wave_count(elapsed_time)
@@ -427,12 +475,24 @@ def main():
         else:
             sunflower_card.set_alpha(255)
         
+        if wallnut_place_cooldown > 0:
+            wallnut_alpha = int(255 * (1 - wallnut_place_cooldown / wallnut_place_rate))
+            wallnut_card.set_alpha(wallnut_alpha)
+        elif placing_wallnut:
+            wallnut_card.set_alpha(180)
+        else:
+            wallnut_card.set_alpha(255)
+        
         window.blit(peashooter_card, peaShooterCard_rect)
         window.blit(sunflower_card, sunflowerCard_rect)
+<<<<<<< HEAD
         window.blit(music_button, music_button_rect)
         
         for peaball in peaballs:
             peaball.draw()
+=======
+        window.blit(wallnut_card, wallnutCard_rect)
+>>>>>>> 3234c2cfe0013570484f49656533d4f7d2b6af49
         
         for zomb in zombies:
             zomb.draw()
@@ -451,6 +511,9 @@ def main():
         
         for tile_pos, sunflowers in occupied_tiles.items():
             sunflowers.draw()
+        
+        for peaball in peaballs:
+            peaball.draw()
         
         for sun in suns:
             sun.draw()
@@ -479,6 +542,21 @@ def main():
                         grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height):
                         if (col, row) not in occupied_tiles:
                             preview_image = pygame.image.load(os.path.join(scriptDir, 'assets', 'sunflowerZsk.png'))
+                            preview_image = pygame.transform.scale(preview_image, (80, 80))
+                            preview_image.set_alpha(180)  # 50% transparent
+                            x, y = tile_positions[(col, row)]
+                            window.blit(preview_image, (x, y))  # Show at tile position
+                        break
+        
+        if placing_wallnut:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            # Check if cursor is in any tile
+            for col in range(tile_cols):
+                for row in range(tile_rows):
+                    if (grid_start_x + col * tile_width <= mouse_x < grid_start_x + (col + 1) * tile_width and
+                        grid_start_y + row * tile_height <= mouse_y < grid_start_y + (row + 1) * tile_height):
+                        if (col, row) not in occupied_tiles:
+                            preview_image = pygame.image.load(os.path.join(scriptDir, 'assets', 'wallnut.png'))
                             preview_image = pygame.transform.scale(preview_image, (80, 80))
                             preview_image.set_alpha(180)  # 50% transparent
                             x, y = tile_positions[(col, row)]
