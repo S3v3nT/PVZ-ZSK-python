@@ -111,7 +111,7 @@ class Sunflower:
         self.image = pygame.image.load(
             os.path.join(scriptDir, "assets", "sunflowerZsk.png")
         )
-        self.image = pygame.transform.scale(self.image, (110, 110))  # width, height
+        self.image = pygame.transform.scale(self.image, (80, 80))  # width, height
         self.width = self.image.get_width()
         self.height = self.image.get_height()
 
