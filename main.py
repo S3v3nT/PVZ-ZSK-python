@@ -205,6 +205,7 @@ def main():
         randint(0, 255),
         randint(0, 255),
     ]  # Target color
+    impact_frames = 0
     sunflowers = []
     wallnuts = []
     zombies = []
@@ -539,6 +540,9 @@ def main():
                             score += 50
                         if peaball in peaballs:
                             peaballs.remove(peaball)
+                        # Trigger impact frames in disco mode
+                        if music_mode == "music":
+                            impact_frames = 8
                         break
 
             # Move zombies
@@ -762,6 +766,34 @@ def main():
             window.blit(game_over_text, game_over_rect)
             window.blit(final_score_text, score_rect)
             window.blit(restart_text, restart_rect)
+
+        if music_mode == "music":
+            disco_frame += 1
+            for i in range(3):  # RGB channels
+                if disco_color[i] < disco_target_color[i]:
+                    disco_color[i] = min(disco_color[i] + 10, disco_target_color[i])
+                elif disco_color[i] > disco_target_color[i]:
+                    disco_color[i] = max(disco_color[i] - 10, disco_target_color[i])
+            # Pick new target color when current is reached
+            if disco_color == disco_target_color:
+                disco_target_color = [randint(0, 255), randint(0, 255), randint(0, 255)]
+            # Draw the overlay with current color
+            disco_overlay = pygame.Surface((1400, 600))
+            disco_overlay.fill(tuple(disco_color))
+            disco_overlay.set_alpha(120)
+            window.blit(disco_overlay, (0, 0))
+        else:
+            disco_frame = 0
+        # --- END DISCO MODE EFFECT ---
+
+        # --- IMPACT FRAMES (freeze + flash when pea hits zombie in disco mode) ---
+        if impact_frames > 0:
+            impact_frames -= 1
+            # Draw white flash overlay
+            flash_overlay = pygame.Surface((1400, 600))
+            flash_overlay.fill((255, 255, 255))
+            flash_overlay.set_alpha(150)
+            window.blit(flash_overlay, (0, 0))
 
         pygame.display.update()
 
